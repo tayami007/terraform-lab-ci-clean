@@ -28,6 +28,13 @@ jobs:
         run: terraform validate -no-color
 
       - name: Terraform Plan (save binary)
+        env:
+          AWS_ACCESS_KEY_ID: FAKEKEY123
+          AWS_SECRET_ACCESS_KEY: FAKESECRET123
+          AWS_DEFAULT_REGION: us-east-1
+        run: terraform plan -no-color -out=tfplan.bin
+
+      - name: Terraform Plan (save binary)
         run: terraform plan -no-color -out=tfplan.bin
 
       - name: Terraform Show → plan.txt (full)
