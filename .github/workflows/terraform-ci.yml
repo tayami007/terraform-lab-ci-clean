@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: write
       id-token: write
 
     steps:
@@ -39,6 +40,7 @@ jobs:
         with:
           name: tf-plan-2399
           path: plan.txt
+
       - name: Extract plan summary (last 20 lines)
         id: extract
         run: |
