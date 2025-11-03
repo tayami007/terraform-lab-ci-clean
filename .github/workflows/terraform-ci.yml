@@ -9,13 +9,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: write
       id-token: write
-
-    # 👇 Add dummy AWS credentials to bypass auth error
-    env:
-      AWS_ACCESS_KEY_ID: dummy
-      AWS_SECRET_ACCESS_KEY: dummy
-      AWS_DEFAULT_REGION: us-east-1
 
     steps:
       - uses: actions/checkout@v4
@@ -36,13 +31,32 @@ jobs:
 
       - name: Terraform Plan (save binary)
         run: terraform plan -no-color -out=tfplan.bin || true
-        # 👆 "|| true" ensures plan continues even if creds are missing
 
       - name: Terraform Show → plan.txt (full)
-        run: terraform show -no-color tfplan.bin | tee plan.txt || true
+        run: terraform show -no-color tfplan.bin | tee plan.txt
 
       - name: Upload Plan Artifact
         uses: actions/upload-artifact@v4
         with:
           name: tf-plan-2399
           path: plan.txt
+
+      - name: Extract plan summary (last 20 lines)
+        id: extract
+        run: |
+          SUMMARY=$(tail -n 20 plan.txt)
+          echo "summary<<EOF" >> $GITHUB_OUTPUT
+          echo "$SUMMARY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Comment plan summary on PR
+        if: github.event_name == 'pull_request'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            **Terraform plan summary** — run #${{ github.run_number }}
+            ```terraform
+            ${{ steps.extract.outputs.summary }}
+            ```
+
